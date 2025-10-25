@@ -219,7 +219,52 @@ export type Database = {
 }
 
 // Client-side Supabase client
-export const createClientSupabase = () => createClientComponentClient<Database>()
+export const createClientSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!url || !key || url.includes('placeholder')) {
+    console.warn('Supabase not configured. Database features will not work.')
+    // Return a mock client that won't crash the app
+    return {
+      auth: {
+        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+        signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+        signInWithOtp: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+        signUp: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+        signOut: () => Promise.resolve({ error: null })
+      },
+      from: () => ({
+        select: () => ({ 
+          eq: () => ({ 
+            single: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+            execute: () => Promise.resolve({ data: [], error: null })
+          }),
+          order: () => ({ execute: () => Promise.resolve({ data: [], error: null }) }),
+          limit: () => ({ execute: () => Promise.resolve({ data: [], error: null }) }),
+          execute: () => Promise.resolve({ data: [], error: null })
+        }),
+        insert: () => ({ execute: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }) }),
+        update: () => ({ 
+          eq: () => ({ execute: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }) })
+        }),
+        upsert: () => ({ execute: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }) })
+      })
+    } as any
+  }
+  
+  return createClientComponentClient<Database>()
+}
 
 // Server-side Supabase client
-export const createServerSupabase = () => createServerComponentClient<Database>({ cookies })
+export const createServerSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!url || !key || url.includes('placeholder')) {
+    console.warn('Supabase not configured. Database features will not work.')
+    return createClientSupabase() as any
+  }
+  
+  return createServerComponentClient<Database>({ cookies })
+}

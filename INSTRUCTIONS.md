@@ -13,6 +13,13 @@ Ensure you have the following installed:
 ## Step 1: Clone and Install Dependencies
 
 ```bash
+#use a venv probably a good idea
+#mac/linux: 
+# python3 -m venv .venv
+# source .venv/bin/activate
+# pip install --upgrade pip
+# pip install -r requirements.txt
+
 # Clone the repository
 git clone <your-repo-url>
 cd plugcu-mvp
@@ -113,7 +120,12 @@ npm run dev
 ### Terminal 2: Backend (FastAPI)
 ```bash
 cd apps/api
-uvicorn main:app --reload
+
+# Option 1: Using uvicorn directly
+python -m uvicorn main:app --reload
+
+# Option 2: Using the run script (if Option 1 doesn't work)
+python run.py
 ```
 
 ## Step 6: Access the Application
@@ -201,6 +213,10 @@ You can also login with pre-seeded demo accounts:
 **Backend API errors:**
 - Run `pip install -r requirements.txt` in `apps/api`
 - Check Python version (needs 3.9+)
+
+**"ImportError: attempted relative import with no known parent package":**
+- Use `python -m uvicorn main:app --reload` instead of `uvicorn main:app --reload`
+- Or use `python run.py` from the `apps/api` directory
 
 **Can't login with demo accounts:**
 - Demo accounts need passwords set in Supabase Auth dashboard

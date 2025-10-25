@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta
 from supabase import Client
-from .models import MatchResponse, MatchReasoning, BrandProfile, EventData
+from models import MatchResponse, MatchReasoning, BrandProfile, EventData
 
 logger = logging.getLogger(__name__)
 

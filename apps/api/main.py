@@ -7,8 +7,8 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import logging
-from .matching import MatchingEngine
-from .models import MatchRequest, MatchResponse, BrandProfile, EventData
+from matching import MatchingEngine
+from models import MatchRequest, MatchResponse, BrandProfile, EventData
 
 load_dotenv()
 
