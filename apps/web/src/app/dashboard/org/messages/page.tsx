@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { createClientSupabase } from '@/lib/supabase'
+import { DealTracker } from '@/components/messaging/deal-tracker'
 import type { Thread, Message, Organization } from '@/types'
 
 interface ExtendedThread extends Thread {
@@ -302,32 +303,38 @@ export default function OrgMessagesPage() {
               </CardHeader>
               
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => {
-                  const isFromOrg = message.sender.role === 'student_org'
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isFromOrg ? 'justify-end' : 'justify-start'}`}
-                    >
+                {/* Deal Tracker */}
+                <DealTracker threadId={selectedThread.id} userRole="student_org" />
+                
+                {/* Messages */}
+                <div className="space-y-4">
+                  {messages.map((message) => {
+                    const isFromOrg = message.sender.role === 'student_org'
+                    return (
                       <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          isFromOrg
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
+                        key={message.id}
+                        className={`flex ${isFromOrg ? 'justify-end' : 'justify-start'}`}
                       >
-                        <p className="text-sm">{message.content}</p>
-                        <p
-                          className={`text-xs mt-1 ${
-                            isFromOrg ? 'text-blue-100' : 'text-gray-500'
+                        <div
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            isFromOrg
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-900'
                           }`}
                         >
-                          {formatDate(message.created_at)}
-                        </p>
+                          <p className="text-sm">{message.content}</p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              isFromOrg ? 'text-blue-100' : 'text-gray-500'
+                            }`}
+                          >
+                            {formatDate(message.created_at)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </CardContent>
               
               <div className="border-t p-4">

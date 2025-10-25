@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { createClientSupabase } from '@/lib/supabase'
+import { DealTracker } from '@/components/messaging/deal-tracker'
 import type { Thread, Message, Brand } from '@/types'
 
 interface ExtendedThread extends Thread {
@@ -300,32 +301,38 @@ export default function BrandMessagesPage() {
               </CardHeader>
               
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => {
-                  const isFromBrand = message.sender.role === 'brand'
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isFromBrand ? 'justify-end' : 'justify-start'}`}
-                    >
+                {/* Deal Tracker */}
+                <DealTracker threadId={selectedThread.id} userRole="brand" />
+                
+                {/* Messages */}
+                <div className="space-y-4">
+                  {messages.map((message) => {
+                    const isFromBrand = message.sender.role === 'brand'
+                    return (
                       <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          isFromBrand
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
+                        key={message.id}
+                        className={`flex ${isFromBrand ? 'justify-end' : 'justify-start'}`}
                       >
-                        <p className="text-sm">{message.content}</p>
-                        <p
-                          className={`text-xs mt-1 ${
-                            isFromBrand ? 'text-blue-100' : 'text-gray-500'
+                        <div
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            isFromBrand
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-900'
                           }`}
                         >
-                          {formatDate(message.created_at)}
-                        </p>
+                          <p className="text-sm">{message.content}</p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              isFromBrand ? 'text-blue-100' : 'text-gray-500'
+                            }`}
+                          >
+                            {formatDate(message.created_at)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </CardContent>
               
               <div className="border-t p-4">

@@ -40,6 +40,15 @@ export default function BrandDiscoverPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // Record page view
+      await supabase.from('interactions').insert({
+        user_id: user.id,
+        action_type: 'view',
+        target_type: 'page',
+        target_id: 'discover',
+        metadata: { page: 'brand_discover' }
+      })
+
       // Get brand profile
       const { data: brandData } = await supabase
         .from('brands')
@@ -69,6 +78,25 @@ export default function BrandDiscoverPage() {
   }, [supabase])
 
   useEffect(() => {
+    // Record search interactions
+    const recordSearchInteraction = async () => {
+      if (filters.search && filters.search.length > 2) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase.from('interactions').insert({
+            user_id: user.id,
+            action_type: 'search',
+            target_type: 'events',
+            target_id: 'discover_search',
+            metadata: { 
+              search_term: filters.search,
+              filters_applied: Object.entries(filters).filter(([key, value]) => key !== 'search' && value).length
+            }
+          })
+        }
+      }
+    }
+
     // Apply filters
     let filtered = events.filter(event => {
       // Search filter
@@ -114,7 +142,11 @@ export default function BrandDiscoverPage() {
     })
 
     setFilteredEvents(filtered)
-  }, [events, filters])
+    
+    // Record search interaction with debounce
+    const timeoutId = setTimeout(recordSearchInteraction, 1000)
+    return () => clearTimeout(timeoutId)
+  }, [events, filters, supabase])
 
   const handleContactOrg = async (event: ExtendedEvent) => {
     if (!brand) {
