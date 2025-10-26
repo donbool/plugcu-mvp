@@ -1,6 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 
 export type Database = {
   public: {
@@ -253,18 +251,7 @@ export const createClientSupabase = () => {
     } as any
   }
   
-  return createClientComponentClient<Database>()
+  return createClient<Database>(url, key)
 }
 
-// Server-side Supabase client
-export const createServerSupabase = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!url || !key || url.includes('placeholder')) {
-    console.warn('Supabase not configured. Database features will not work.')
-    return createClientSupabase() as any
-  }
-  
-  return createServerComponentClient<Database>({ cookies })
-}
+// Note: Server-side client moved to separate file to avoid Next.js import issues
