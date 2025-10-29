@@ -145,7 +145,6 @@ plugcu-mvp/
 - **Role-based access control** (student_org / brand / admin)
 - **JWT token authentication** via Supabase Auth
 - **Input validation** with Zod (frontend) and Pydantic (backend)
-- **No hardcoded secrets** - environment variables only
 
 ## 🧪 Demo Data
 
