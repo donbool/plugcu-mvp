@@ -148,7 +148,7 @@ export default function BrandMatchesPage() {
 
     // Get feedback for each match (disabled - data collection paused)
     const { data: { user } } = await supabase.auth.getUser()
-    const enrichedMatches = (matchesData || []).map((match) => {
+    const enrichedMatches = (matchesData || []).map((match: any) => {
       // const { data: feedbackData } = await supabase
       //   .from('match_feedback')
       //   .select('feedback_type, feedback_reasons')

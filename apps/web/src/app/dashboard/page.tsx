@@ -9,41 +9,35 @@ export default function DashboardRedirect() {
   const router = useRouter()
   const supabase = createClientSupabase()
 
-  // DISABLED: useEffect hook - all database calls disabled to reduce network requests
-  // useEffect(() => {
-  //   const redirectUser = async () => {
-  //     try {
-  //       const { data: { user: authUser } } = await supabase.auth.getUser()
-  //
-  //       if (!authUser) {
-  //         router.push('/auth/login')
-  //         return
-  //       }
-  //
-  //       // Get role from auth metadata instead of database call
-  //       const roleFromMeta = authUser.user_metadata?.role as string || 'student_org'
-  //
-  //       if (roleFromMeta === 'student_org') {
-  //         router.push('/dashboard/org')
-  //       } else if (roleFromMeta === 'brand') {
-  //         router.push('/dashboard/brand')
-  //       } else if (roleFromMeta === 'admin') {
-  //         router.push('/admin')
-  //       } else {
-  //         router.push('/dashboard/org')
-  //       }
-  //     } finally {
-  //       setLoading(false)
-  //     }
-  //   }
-  //
-  //   redirectUser()
-  // }, [router, supabase])
-
-  // Set loading to false immediately
   useEffect(() => {
-    setLoading(false)
-  }, [])
+    const redirectUser = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+
+        if (!authUser) {
+          router.push('/auth/login')
+          return
+        }
+
+        // Get role from auth metadata
+        const roleFromMeta = authUser.user_metadata?.role as string || 'student_org'
+
+        if (roleFromMeta === 'student_org') {
+          router.push('/dashboard/org')
+        } else if (roleFromMeta === 'brand') {
+          router.push('/dashboard/brand')
+        } else if (roleFromMeta === 'admin') {
+          router.push('/dashboard/admin')
+        } else {
+          router.push('/dashboard/org')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    redirectUser()
+  }, [router, supabase])
 
   if (loading) {
     return (

@@ -33,35 +33,32 @@ export default function BrandDashboard() {
           return
         }
 
-        const { data: brandData } = await supabase
-          .from('brands')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-
-        if (brandData) {
-          setBrand(brandData)
-
-          // Get match count
-          const { data: matchesData } = await supabase
+        // Fetch brand and matches in parallel
+        const [brandRes, matchesRes, eventsRes] = await Promise.all([
+          supabase
+            .from('brands')
+            .select('*')
+            .eq('user_id', user.id)
+            .single(),
+          supabase
             .from('matches')
-            .select('id')
-            .eq('brand_id', brandData.id)
+            .select('id', { count: 'exact' })
+            .eq('brand_id', user.id)
+            .limit(1),
+          supabase
+            .from('events')
+            .select('id, title, created_at, tags, featured, description, event_date, expected_attendance, sponsorship_min_amount, orgs(name, university)')
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .limit(3)
+        ])
 
-          setMatchCount(matchesData?.length || 0)
-        } else {
-          setBrand(null)
+        if (brandRes.data) {
+          setBrand(brandRes.data)
         }
 
-        // Get recent events
-        const { data: eventsData } = await supabase
-          .from('events')
-          .select('*')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false })
-          .limit(3)
-
-        setRecentEvents(eventsData || [])
+        setMatchCount(matchesRes.count || 0)
+        setRecentEvents(eventsRes.data || [])
       } catch (error) {
         console.error('Error loading brand dashboard:', error)
       } finally {
@@ -86,7 +83,7 @@ export default function BrandDashboard() {
         <div className="max-w-2xl mx-auto text-center py-12">
           <h1 className="text-3xl font-bold mb-4">Welcome to PlugCU!</h1>
           <p className="text-gray-600 mb-8">
-            Let's get started by setting up your brand profile to discover sponsorship opportunities.
+            Let&apos;s get started by setting up your brand profile to discover sponsorship opportunities.
           </p>
           <Link href="/dashboard/brand/profile">
             <Button size="lg">Create Brand Profile</Button>
@@ -262,7 +259,7 @@ export default function BrandDashboard() {
             <CardHeader>
               <CardTitle className="text-yellow-800">Profile Under Review</CardTitle>
               <CardDescription className="text-yellow-700">
-                Your brand profile is being reviewed. You'll be notified once it's approved.
+                Your brand profile is being reviewed. You&apos;ll be notified once it&apos;s approved.
               </CardDescription>
             </CardHeader>
           </Card>

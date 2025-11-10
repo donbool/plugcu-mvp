@@ -79,6 +79,7 @@ export default function BrandDiscoverPage() {
   // }, [supabase])
 
   useEffect(() => {
+    // Only fetch once on mount
     const fetchData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -87,28 +88,40 @@ export default function BrandDiscoverPage() {
           return
         }
 
-        // Get brand profile
-        const { data: brandData } = await supabase
-          .from('brands')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
+        // Fetch brand and events in parallel for speed
+        const [brandRes, eventsRes] = await Promise.all([
+          supabase
+            .from('brands')
+            .select('*')
+            .eq('user_id', user.id)
+            .single(),
+          supabase
+            .from('events')
+            .select(`
+              id,
+              title,
+              description,
+              event_date,
+              status,
+              featured,
+              expected_attendance,
+              sponsorship_min_amount,
+              sponsorship_max_amount,
+              sponsorship_benefits,
+              tags,
+              event_type,
+              orgs(name, university, category)
+            `)
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .limit(50)
+        ])
 
-        if (brandData) {
-          setBrand(brandData)
+        if (brandRes.data) {
+          setBrand(brandRes.data)
         }
 
-        // Get published events with organization info
-        const { data: eventsData } = await supabase
-          .from('events')
-          .select(`
-            *,
-            orgs(name, university, category)
-          `)
-          .eq('status', 'published')
-          .order('created_at', { ascending: false })
-
-        const events = eventsData as ExtendedEvent[] || []
+        const events = eventsRes.data as ExtendedEvent[] || []
         setEvents(events)
         setFilteredEvents(events)
       } catch (error) {
@@ -143,16 +156,19 @@ export default function BrandDiscoverPage() {
 
     // Apply filters
     let filtered = events.filter(event => {
+      // Skip events without org data
+      if (!event.orgs) return false
+
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase()
-        const matchesSearch = 
+        const matchesSearch =
           event.title.toLowerCase().includes(searchLower) ||
           event.description.toLowerCase().includes(searchLower) ||
           event.orgs.name.toLowerCase().includes(searchLower) ||
           event.orgs.university.toLowerCase().includes(searchLower) ||
           event.tags.some(tag => tag.toLowerCase().includes(searchLower))
-        
+
         if (!matchesSearch) return false
       }
 
@@ -252,8 +268,7 @@ export default function BrandDiscoverPage() {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      time: 'short'
+      day: 'numeric'
     })
   }
 
@@ -293,8 +308,8 @@ export default function BrandDiscoverPage() {
     )
   }
 
-  const eventTypes = [...new Set(events.map(e => e.event_type).filter(Boolean))]
-  const universities = [...new Set(events.map(e => e.orgs.university))]
+  const eventTypes = [...new Set(events.map(e => e.event_type).filter((type): type is string => Boolean(type)))]
+  const universities = [...new Set(events.map(e => e.orgs?.university).filter((uni): uni is string => Boolean(uni)))]
 
   return (
     <DashboardLayout requiredRole="brand">
@@ -353,7 +368,7 @@ export default function BrandDiscoverPage() {
                   <option value="">All Types</option>
                   {eventTypes.map(type => (
                     <option key={type} value={type}>
-                      {type?.charAt(0).toUpperCase() + type?.slice(1)}
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
                     </option>
                   ))}
                 </select>
@@ -425,7 +440,7 @@ export default function BrandDiscoverPage() {
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant="secondary">
-                      {event.orgs.university}
+                      {event.orgs?.university || 'Unknown'}
                     </Badge>
                     {event.featured && (
                       <Badge variant="default">Featured</Badge>
@@ -433,8 +448,8 @@ export default function BrandDiscoverPage() {
                   </div>
                   <CardTitle className="text-xl">{event.title}</CardTitle>
                   <CardDescription>
-                    <span className="font-medium">{event.orgs.name}</span>
-                    {event.orgs.category && ` • ${event.orgs.category}`}
+                    <span className="font-medium">{event.orgs?.name || 'Unknown Organization'}</span>
+                    {event.orgs?.category && ` • ${event.orgs.category}`}
                   </CardDescription>
                 </CardHeader>
                 

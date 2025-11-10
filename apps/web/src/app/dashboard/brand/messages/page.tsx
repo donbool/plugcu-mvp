@@ -82,7 +82,7 @@ export default function BrandMessagesPage() {
 
     // Get latest message and unread count for each thread
     const threadsWithMetadata = await Promise.all(
-      (threadsData || []).map(async (thread) => {
+      (threadsData || []).map(async (thread: any) => {
         // Get latest message
         const { data: latestMessage } = await supabase
           .from('messages')
@@ -302,7 +302,7 @@ export default function BrandMessagesPage() {
               
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* Deal Tracker */}
-                <DealTracker threadId={selectedThread.id} userRole="brand" />
+                <DealTracker />
                 
                 {/* Messages */}
                 <div className="space-y-4">

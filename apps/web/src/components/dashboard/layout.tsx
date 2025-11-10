@@ -26,11 +26,19 @@ export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps
         return
       }
 
-      // Skip profile fetch - trust auth session
+      // Get the user's actual role from auth metadata
+      const userRole = (authUser.user_metadata?.role || 'student_org') as UserRole
+
+      // If a specific role is required, check if user has it
+      if (requiredRole && userRole !== requiredRole) {
+        router.push('/dashboard')
+        return
+      }
+
       const mockUser = {
         id: authUser.id,
         email: authUser.email || '',
-        role: 'student_org' as const,
+        role: userRole,
         full_name: authUser.user_metadata?.full_name || '',
         avatar_url: undefined,
         created_at: new Date().toISOString(),
@@ -42,7 +50,7 @@ export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps
     }
 
     getUser()
-  }, [router, requiredRole])
+  }, [router, requiredRole, supabase])
 
   if (loading) {
     return (

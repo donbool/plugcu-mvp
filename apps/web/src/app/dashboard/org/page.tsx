@@ -41,10 +41,13 @@ export default function OrgDashboard() {
         if (orgData) {
           setOrg(orgData)
 
+          // Fetch only recent events with limited fields for speed
           const { data: eventsData } = await supabase
             .from('events')
-            .select('*')
+            .select('id, title, status, created_at, updated_at, event_date')
             .eq('org_id', orgData.id)
+            .order('created_at', { ascending: false })
+            .limit(20)
 
           setEvents(eventsData || [])
         } else {
@@ -75,7 +78,7 @@ export default function OrgDashboard() {
         <div className="max-w-2xl mx-auto text-center py-12">
           <h1 className="text-3xl font-bold mb-4">Welcome to PlugCU!</h1>
           <p className="text-gray-600 mb-8">
-            Let's get started by setting up your organization profile.
+            Let&apos;s get started by setting up your organization profile.
           </p>
           <Link href="/dashboard/org/profile">
             <Button size="lg">Create Organization Profile</Button>
@@ -211,7 +214,7 @@ export default function OrgDashboard() {
             <CardHeader>
               <CardTitle className="text-yellow-800">Profile Under Review</CardTitle>
               <CardDescription className="text-yellow-700">
-                Your organization profile is being reviewed. You'll be notified once it's approved.
+                Your organization profile is being reviewed. You&apos;ll be notified once it&apos;s approved.
               </CardDescription>
             </CardHeader>
           </Card>
