@@ -1,0 +1,24 @@
+{
+  "name": "plugcu-mvp",
+  "version": "1.0.0",
+  "description": "PlugCU MVP - Connecting student organizations with brands",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && uvicorn main:app --reload\"",
+    "build": "cd apps/web && npm run build",
+    "start": "cd apps/web && npm start",
+    "lint": "cd apps/web && npm run lint",
+    "typecheck": "cd apps/web && npm run typecheck",
+    "seed": "cd scripts && python seed_data.py",
+    "setup": "cd apps/web && npm install && cd ../api && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "workspaces": [
+    "apps/web"
+  ],
+  "dependencies": {
+    "@supabase/ssr": "^0.7.0"
+  }
+}
