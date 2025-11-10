@@ -79,11 +79,13 @@ export default function BrandDiscoverPage() {
   // }, [supabase])
 
   useEffect(() => {
+    let isMounted = true
+
     // Only fetch once on mount
     const fetchData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        if (!user || !isMounted) {
           setLoading(false)
           return
         }
@@ -117,6 +119,8 @@ export default function BrandDiscoverPage() {
             .limit(50)
         ])
 
+        if (!isMounted) return
+
         if (brandRes.data) {
           setBrand(brandRes.data)
         }
@@ -127,11 +131,17 @@ export default function BrandDiscoverPage() {
       } catch (error) {
         console.error('Error loading discover page:', error)
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchData()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   useEffect(() => {
