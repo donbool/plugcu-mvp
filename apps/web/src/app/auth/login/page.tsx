@@ -32,16 +32,12 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        // Get user profile to determine role
-        const { data: profile } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single()
+        // Get role from auth metadata instead of database call
+        const role = data.user.user_metadata?.role || 'student_org'
 
-        if (profile?.role === 'student_org') {
+        if (role === 'student_org') {
           router.push('/dashboard/org')
-        } else if (profile?.role === 'brand') {
+        } else if (role === 'brand') {
           router.push('/dashboard/brand')
         } else {
           router.push('/dashboard')

@@ -3,41 +3,47 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientSupabase } from '@/lib/supabase'
-import type { User } from '@/types'
 
 export default function DashboardRedirect() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const supabase = createClientSupabase()
 
+  // DISABLED: useEffect hook - all database calls disabled to reduce network requests
+  // useEffect(() => {
+  //   const redirectUser = async () => {
+  //     try {
+  //       const { data: { user: authUser } } = await supabase.auth.getUser()
+  //
+  //       if (!authUser) {
+  //         router.push('/auth/login')
+  //         return
+  //       }
+  //
+  //       // Get role from auth metadata instead of database call
+  //       const roleFromMeta = authUser.user_metadata?.role as string || 'student_org'
+  //
+  //       if (roleFromMeta === 'student_org') {
+  //         router.push('/dashboard/org')
+  //       } else if (roleFromMeta === 'brand') {
+  //         router.push('/dashboard/brand')
+  //       } else if (roleFromMeta === 'admin') {
+  //         router.push('/admin')
+  //       } else {
+  //         router.push('/dashboard/org')
+  //       }
+  //     } finally {
+  //       setLoading(false)
+  //     }
+  //   }
+  //
+  //   redirectUser()
+  // }, [router, supabase])
+
+  // Set loading to false immediately
   useEffect(() => {
-    const redirectUser = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      
-      if (!authUser) {
-        router.push('/auth/login')
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', authUser.id)
-        .single()
-
-      if (profile?.role === 'student_org') {
-        router.push('/dashboard/org')
-      } else if (profile?.role === 'brand') {
-        router.push('/dashboard/brand')
-      } else if (profile?.role === 'admin') {
-        router.push('/admin')
-      } else {
-        router.push('/auth/login')
-      }
-    }
-
-    redirectUser()
-  }, [router, supabase])
+    setLoading(false)
+  }, [])
 
   if (loading) {
     return (

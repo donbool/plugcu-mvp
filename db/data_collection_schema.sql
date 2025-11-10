@@ -111,7 +111,7 @@ create table public.survey_responses (
   completion_rate decimal(4,2) not null, -- percentage of questions answered
   time_to_complete_seconds integer,
   
-  created_at timestamp with time zone default timezone('utc'::text, now') not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   
   unique(survey_id, respondent_id, target_id) -- one response per user per survey per target
 );

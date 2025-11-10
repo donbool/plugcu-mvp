@@ -35,66 +35,110 @@ export default function BrandDiscoverPage() {
   
   const supabase = createClientSupabase()
 
+  // DISABLED: useEffect hook - all database calls disabled to reduce network requests
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     const { data: { user } } = await supabase.auth.getUser()
+  //     if (!user) return
+  //
+  //     // Record page view (disabled for now - data collection paused)
+  //     // await supabase.from('interactions').insert({
+  //     //   user_id: user.id,
+  //     //   action_type: 'view',
+  //     //   target_type: 'page',
+  //     //   target_id: 'discover',
+  //     //   metadata: { page: 'brand_discover' }
+  //     // })
+  //
+  //     // Get brand profile
+  //     const { data: brandData } = await supabase
+  //       .from('brands')
+  //       .select('*')
+  //       .eq('user_id', user.id)
+  //       .single()
+  //
+  //     setBrand(brandData)
+  //
+  //     // Get published events with organization info
+  //     const { data: eventsData } = await supabase
+  //       .from('events')
+  //       .select(`
+  //         *,
+  //         orgs(name, university, category)
+  //       `)
+  //       .eq('status', 'published')
+  //       .order('created_at', { ascending: false })
+  //
+  //     const events = eventsData as ExtendedEvent[] || []
+  //     setEvents(events)
+  //     setFilteredEvents(events)
+  //     setLoading(false)
+  //   }
+  //
+  //   fetchData()
+  // }, [supabase])
+
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setLoading(false)
+          return
+        }
 
-      // Record page view
-      await supabase.from('interactions').insert({
-        user_id: user.id,
-        action_type: 'view',
-        target_type: 'page',
-        target_id: 'discover',
-        metadata: { page: 'brand_discover' }
-      })
+        // Get brand profile
+        const { data: brandData } = await supabase
+          .from('brands')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
 
-      // Get brand profile
-      const { data: brandData } = await supabase
-        .from('brands')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+        if (brandData) {
+          setBrand(brandData)
+        }
 
-      setBrand(brandData)
+        // Get published events with organization info
+        const { data: eventsData } = await supabase
+          .from('events')
+          .select(`
+            *,
+            orgs(name, university, category)
+          `)
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
 
-      // Get published events with organization info
-      const { data: eventsData } = await supabase
-        .from('events')
-        .select(`
-          *,
-          orgs(name, university, category)
-        `)
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-
-      const events = eventsData as ExtendedEvent[] || []
-      setEvents(events)
-      setFilteredEvents(events)
-      setLoading(false)
+        const events = eventsData as ExtendedEvent[] || []
+        setEvents(events)
+        setFilteredEvents(events)
+      } catch (error) {
+        console.error('Error loading discover page:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchData()
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
-    // Record search interactions
+    // Record search interactions (disabled for now - data collection paused)
     const recordSearchInteraction = async () => {
-      if (filters.search && filters.search.length > 2) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase.from('interactions').insert({
-            user_id: user.id,
-            action_type: 'search',
-            target_type: 'events',
-            target_id: 'discover_search',
-            metadata: { 
-              search_term: filters.search,
-              filters_applied: Object.entries(filters).filter(([key, value]) => key !== 'search' && value).length
-            }
-          })
-        }
-      }
+      // if (filters.search && filters.search.length > 2) {
+      //   const { data: { user } } = await supabase.auth.getUser()
+      //   if (user) {
+      //     await supabase.from('interactions').insert({
+      //       user_id: user.id,
+      //       action_type: 'search',
+      //       target_type: 'events',
+      //       target_id: 'discover_search',
+      //       metadata: {
+      //         search_term: filters.search,
+      //         filters_applied: Object.entries(filters).filter(([key, value]) => key !== 'search' && value).length
+      //       }
+      //     })
+      //   }
+      // }
     }
 
     // Apply filters
@@ -142,11 +186,11 @@ export default function BrandDiscoverPage() {
     })
 
     setFilteredEvents(filtered)
-    
+
     // Record search interaction with debounce
     const timeoutId = setTimeout(recordSearchInteraction, 1000)
     return () => clearTimeout(timeoutId)
-  }, [events, filters, supabase])
+  }, [events, filters])
 
   const handleContactOrg = async (event: ExtendedEvent) => {
     if (!brand) {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { createClientSupabase } from '@/lib/supabase'
+import { createUserProfile } from '@/app/actions/auth'
 import type { UserRole } from '@/types'
 
 export default function SignUpPage() {
@@ -14,7 +15,7 @@ export default function SignUpPage() {
   const [role, setRole] = useState<UserRole>('student_org')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  
+
   const router = useRouter()
   const supabase = createClientSupabase()
 
@@ -24,7 +25,8 @@ export default function SignUpPage() {
     setError('')
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Sign up user
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -32,35 +34,48 @@ export default function SignUpPage() {
             full_name: fullName,
             role: role,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       })
 
-      if (error) {
-        setError(error.message)
+      if (signUpError) {
+        setError(signUpError.message)
+        setIsLoading(false)
         return
       }
 
-      if (data.user) {
-        // Create user profile
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            email: data.user.email!,
-            role: role,
-            full_name: fullName,
-          })
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError)
-        }
-
-        setError('Check your email to confirm your account!')
+      if (!data.user) {
+        setError('Failed to create account')
+        setIsLoading(false)
+        return
       }
+
+      // Create user profile (trigger might not fire immediately)
+      try {
+        await createUserProfile(data.user.id, email, role, fullName)
+        console.log('User profile created')
+      } catch (profileError) {
+        console.error('Error creating profile:', profileError)
+        // Continue anyway, as the trigger might create it
+      }
+
+      // Sign in user immediately after signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        setError('Account created! Please log in.')
+        setIsLoading(false)
+        return
+      }
+
+      // Redirect to dashboard
+      router.push('/dashboard')
+
     } catch (err) {
+      console.error('Signup error:', err)
       setError('An unexpected error occurred')
-    } finally {
       setIsLoading(false)
     }
   }

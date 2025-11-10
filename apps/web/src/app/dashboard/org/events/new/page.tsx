@@ -59,21 +59,31 @@ export default function NewEventPage() {
 
   useEffect(() => {
     const fetchOrg = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setLoading(false)
+          return
+        }
 
-      const { data: orgData } = await supabase
-        .from('orgs')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+        const { data: orgData } = await supabase
+          .from('orgs')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
 
-      setOrg(orgData)
-      setLoading(false)
+        if (orgData) {
+          setOrg(orgData)
+        }
+      } catch (error) {
+        console.error('Error loading organization:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchOrg()
-  }, [supabase])
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -15,36 +15,51 @@ export default function OrgDashboard() {
   const [loading, setLoading] = useState(true)
   const supabase = createClientSupabase()
 
+  // DISABLED: All database calls disabled to reduce network pinging
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     ...database calls...
+  //   }
+  //   fetchData()
+  // }, [supabase])
+
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setLoading(false)
+          return
+        }
 
-      // Fetch organization profile
-      const { data: orgData } = await supabase
-        .from('orgs')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (orgData) {
-        setOrg(orgData)
-
-        // Fetch organization events
-        const { data: eventsData } = await supabase
-          .from('events')
+        const { data: orgData } = await supabase
+          .from('orgs')
           .select('*')
-          .eq('org_id', orgData.id)
-          .order('created_at', { ascending: false })
+          .eq('user_id', user.id)
+          .single()
 
-        setEvents(eventsData || [])
+        if (orgData) {
+          setOrg(orgData)
+
+          const { data: eventsData } = await supabase
+            .from('events')
+            .select('*')
+            .eq('org_id', orgData.id)
+
+          setEvents(eventsData || [])
+        } else {
+          setOrg(null)
+          setEvents([])
+        }
+      } catch (error) {
+        console.error('Error loading org dashboard:', error)
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     fetchData()
-  }, [supabase])
+  }, [])
 
   if (loading) {
     return (

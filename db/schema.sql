@@ -10,7 +10,7 @@ create type event_status as enum ('draft', 'published', 'closed');
 
 -- Users table (extends Supabase auth.users)
 create table public.users (
-  id uuid references auth.users on delete cascade primary key,
+  id uuid primary key,
   email text unique not null,
   role user_role not null,
   full_name text,
@@ -170,6 +170,9 @@ create policy "Users can update their own profile" on public.users
 create policy "Public profiles are viewable by authenticated users" on public.users
   for select using (auth.role() = 'authenticated');
 
+create policy "Enable insert for auth trigger" on public.users
+  for insert with check (true);
+
 -- Orgs policies
 create policy "Orgs can manage their own data" on public.orgs
   for all using (user_id = auth.uid());
@@ -270,3 +273,39 @@ create trigger update_events_updated_at before update on public.events
 
 create trigger update_threads_updated_at before update on public.threads
   for each row execute function update_updated_at_column();
+
+-- Function to handle new user signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+declare
+  user_role text;
+begin
+  -- Extract role from metadata, default to 'student_org'
+  user_role := coalesce(new.raw_user_meta_data->>'role', 'student_org');
+
+  -- Ensure the role is one of the valid enum values
+  if user_role not in ('student_org', 'brand', 'admin') then
+    user_role := 'student_org';
+  end if;
+
+  insert into public.users (id, email, role, full_name)
+  values (
+    new.id,
+    new.email,
+    user_role::user_role,
+    coalesce(new.raw_user_meta_data->>'full_name', '')
+  )
+  on conflict (id) do nothing;
+  return new;
+exception when others then
+  -- Log the error but don't fail the trigger
+  raise warning 'Error in handle_new_user: %', sqlerrm;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+-- Trigger to automatically create user profile on signup
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();

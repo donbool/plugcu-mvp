@@ -62,80 +62,69 @@ export default function BrandMatchesPage() {
   
   const supabase = createClientSupabase()
 
+  // DISABLED: useEffect hook - all database calls disabled to reduce network requests
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     const { data: { user } } = await supabase.auth.getUser()
+  //     if (!user) return
+  //
+  //     // Get brand profile
+  //     const { data: brandData } = await supabase
+  //       .from('brands')
+  //       .select('*')
+  //       .eq('user_id', user.id)
+  //       .single()
+  //
+  //     setBrand(brandData)
+  //
+  //     if (brandData) {
+  //       await fetchMatches(brandData.id)
+  //     }
+  //
+  //     setLoading(false)
+  //   }
+  //
+  //   fetchData()
+  // }, [supabase])
+
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setLoading(false)
+          return
+        }
 
-      // Get brand profile
-      const { data: brandData } = await supabase
-        .from('brands')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+        // Get brand profile
+        const { data: brandData } = await supabase
+          .from('brands')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
 
-      setBrand(brandData)
-
-      if (brandData) {
-        await fetchMatches(brandData.id)
+        if (brandData) {
+          setBrand(brandData)
+          await fetchMatches(brandData.id)
+        }
+      } catch (error) {
+        console.error('Error loading matches:', error)
+      } finally {
+        setLoading(false)
       }
-      
-      setLoading(false)
     }
 
     fetchData()
-  }, [supabase])
+  }, [])
 
   const fetchMatches = async (brandId: string) => {
     try {
-      // First, trigger match computation via FastAPI
-      const fastApiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000'
-      
-      const response = await fetch(`${fastApiUrl}/api/v1/matches/${brandId}`, {
-        headers: {
-          'Authorization': `Bearer dummy-token` // TODO: Implement proper JWT
-        }
-      })
+      // Disabled: FastAPI endpoint not needed, fetch directly from database
+      // const fastApiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000'
+      // const response = await fetch(`${fastApiUrl}/api/v1/matches/${brandId}`, {...})
 
-      if (!response.ok) {
-        console.warn('FastAPI matches not available, falling back to database')
-        await fetchMatchesFromDB(brandId)
-        return
-      }
-
-      const apiMatches = await response.json()
-      
-      // Get additional event and feedback data from Supabase
-      const enrichedMatches = await Promise.all(
-        apiMatches.map(async (match: any) => {
-          // Get event details
-          const { data: eventData } = await supabase
-            .from('events')
-            .select(`
-              id, title, description, event_date, expected_attendance,
-              sponsorship_min_amount, sponsorship_max_amount, tags,
-              orgs(name, university)
-            `)
-            .eq('id', match.event_id)
-            .single()
-
-          // Get existing feedback
-          const { data: feedbackData } = await supabase
-            .from('match_feedback')
-            .select('feedback_type, feedback_reasons')
-            .eq('match_id', match.id)
-            .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-            .single()
-
-          return {
-            ...match,
-            events: eventData,
-            feedback: feedbackData
-          }
-        })
-      )
-
-      setMatches(enrichedMatches)
+      // Fetch matches directly from database
+      await fetchMatchesFromDB(brandId)
     } catch (error) {
       console.error('Error fetching matches:', error)
       await fetchMatchesFromDB(brandId)
@@ -157,23 +146,21 @@ export default function BrandMatchesPage() {
       .order('score', { ascending: false })
       .limit(20)
 
-    // Get feedback for each match
+    // Get feedback for each match (disabled - data collection paused)
     const { data: { user } } = await supabase.auth.getUser()
-    const enrichedMatches = await Promise.all(
-      (matchesData || []).map(async (match) => {
-        const { data: feedbackData } = await supabase
-          .from('match_feedback')
-          .select('feedback_type, feedback_reasons')
-          .eq('match_id', match.id)
-          .eq('user_id', user?.id)
-          .single()
+    const enrichedMatches = (matchesData || []).map((match) => {
+      // const { data: feedbackData } = await supabase
+      //   .from('match_feedback')
+      //   .select('feedback_type, feedback_reasons')
+      //   .eq('match_id', match.id)
+      //   .eq('user_id', user?.id)
+      //   .single()
 
-        return {
-          ...match,
-          feedback: feedbackData
-        }
-      })
-    )
+      return {
+        ...match,
+        feedback: null
+      }
+    })
 
     setMatches(enrichedMatches)
   }
@@ -183,32 +170,34 @@ export default function BrandMatchesPage() {
 
     setFeedbackSubmitting(matchId)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      // Record interaction
-      await supabase.from('interactions').insert({
-        user_id: user.id,
-        action_type: 'feedback',
-        target_type: 'match',
-        target_id: matchId,
-        metadata: { feedback_type: feedbackType, reasons }
-      })
-
-      // Upsert feedback
-      const { error } = await supabase
-        .from('match_feedback')
-        .upsert({
-          match_id: matchId,
-          user_id: user.id,
-          feedback_type: feedbackType,
-          feedback_reasons: reasons
-        })
-
-      if (error) throw error
-
-      // Refresh matches to show updated feedback
-      await fetchMatches(brand.id)
+      // Data collection disabled for now
+      // const { data: { user } } = await supabase.auth.getUser()
+      // if (!user) throw new Error('Not authenticated')
+      //
+      // // Record interaction
+      // await supabase.from('interactions').insert({
+      //   user_id: user.id,
+      //   action_type: 'feedback',
+      //   target_type: 'match',
+      //   target_id: matchId,
+      //   metadata: { feedback_type: feedbackType, reasons }
+      // })
+      //
+      // // Upsert feedback
+      // const { error } = await supabase
+      //   .from('match_feedback')
+      //   .upsert({
+      //     match_id: matchId,
+      //     user_id: user.id,
+      //     feedback_type: feedbackType,
+      //     feedback_reasons: reasons
+      //   })
+      //
+      // if (error) throw error
+      //
+      // // Refresh matches to show updated feedback
+      // await fetchMatches(brand.id)
+      console.log('Feedback submission disabled (data collection paused)')
     } catch (error) {
       console.error('Error submitting feedback:', error)
       alert('Failed to submit feedback')
@@ -221,20 +210,20 @@ export default function BrandMatchesPage() {
     if (!brand) return
 
     try {
-      // Record interaction
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase.from('interactions').insert({
-          user_id: user.id,
-          action_type: 'contact',
-          target_type: 'event',
-          target_id: match.events.id,
-          metadata: { 
-            match_score: match.score,
-            via: 'matches_page'
-          }
-        })
-      }
+      // Record interaction (disabled - data collection paused)
+      // const { data: { user } } = await supabase.auth.getUser()
+      // if (user) {
+      //   await supabase.from('interactions').insert({
+      //     user_id: user.id,
+      //     action_type: 'contact',
+      //     target_type: 'event',
+      //     target_id: match.events.id,
+      //     metadata: {
+      //       match_score: match.score,
+      //       via: 'matches_page'
+      //     }
+      //   })
+      // }
 
       // Navigate to discover page to handle contact flow
       window.location.href = `/dashboard/brand/discover`

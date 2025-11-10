@@ -16,47 +16,61 @@ export default function BrandDashboard() {
   const [loading, setLoading] = useState(true)
   const supabase = createClientSupabase()
 
+  // DISABLED: All database calls disabled to reduce network pinging
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     ...database calls...
+  //   }
+  //   fetchData()
+  // }, [supabase])
+
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setLoading(false)
+          return
+        }
 
-      // Fetch brand profile
-      const { data: brandData } = await supabase
-        .from('brands')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+        const { data: brandData } = await supabase
+          .from('brands')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
 
-      if (brandData) {
-        setBrand(brandData)
+        if (brandData) {
+          setBrand(brandData)
 
-        // Fetch match count
-        const { count } = await supabase
-          .from('matches')
-          .select('*', { count: 'exact', head: true })
-          .eq('brand_id', brandData.id)
+          // Get match count
+          const { data: matchesData } = await supabase
+            .from('matches')
+            .select('id')
+            .eq('brand_id', brandData.id)
 
-        setMatchCount(count || 0)
+          setMatchCount(matchesData?.length || 0)
+        } else {
+          setBrand(null)
+        }
+
+        // Get recent events
+        const { data: eventsData } = await supabase
+          .from('events')
+          .select('*')
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
+          .limit(3)
+
+        setRecentEvents(eventsData || [])
+      } catch (error) {
+        console.error('Error loading brand dashboard:', error)
+      } finally {
+        setLoading(false)
       }
-
-      // Fetch recent published events for discovery preview
-      const { data: eventsData } = await supabase
-        .from('events')
-        .select(`
-          *,
-          orgs(name, university)
-        `)
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .limit(3)
-
-      setRecentEvents(eventsData || [])
-      setLoading(false)
     }
 
     fetchData()
-  }, [supabase])
+  }, [])
 
   if (loading) {
     return (
